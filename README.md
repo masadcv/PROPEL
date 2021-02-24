@@ -41,10 +41,10 @@ L = propel_loss(feat, y)
 
 print(L)
 ```
-## Documentation
+# Documentation
 Further details of each function implemented for PROPEL can be accessed at the documentation hosted at: [https://masaddev.github.io/PROPEL/index.html](https://masaddev.github.io/PROPEL/index.html). 
 
-## Citing PROPEL
+# Citing PROPEL
 Pre-print of PROPEL can be found at: [PROPEL: Probabilistic Parametric Regression Loss for Convolutional Neural Networks](https://arxiv.org/pdf/1807.10937.pdf)
 
 If you use PROPEL in your research, then please cite:

@@ -2,8 +2,6 @@ import math
 import itertools
 
 import torch
-import numpy as np
-
 
 # Define EPS for numerical stability
 eps = 7.0/3 - 4.0/3 - 1

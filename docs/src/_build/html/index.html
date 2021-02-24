@@ -1,0 +1,345 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Welcome to PROPEL Loss’s documentation! &mdash; PROPEL Loss 0.0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="#" class="icon icon-home"> PROPEL Loss
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Welcome to PROPEL Loss’s documentation!</a></li>
+</ul>
+</div>
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">PROPEL Loss</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Welcome to PROPEL Loss’s documentation!</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-propel_loss.propel">
+<span id="welcome-to-propel-loss-s-documentation"></span><h1>Welcome to PROPEL Loss’s documentation!<a class="headerlink" href="#module-propel_loss.propel" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="propel_loss.propel.PROPEL">
+<em class="property">class </em><code class="sig-prename descclassname">propel_loss.propel.</code><code class="sig-name descname">PROPEL</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sigma</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">reduction</span><span class="o">=</span><span class="default_value">'mean'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/propel_loss/propel.html#PROPEL"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propel_loss.propel.PROPEL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.loss._Loss</span></code></p>
+<p>PRObabilistic Parametric rEgression Loss (PROPEL) for enabling
+neural networks to output parameters of a mixture of Gaussian distributions from [1].</p>
+<p>[1] “PROPEL: Probabilistic Parametric Regression Loss for Convolutional Neural Networks”,
+M. Asad et al. - 25th International Conference on Pattern Recognition (ICPR), 2020</p>
+<p>Usage instructions:
+In order to use the loss function, the expected output shape from neural network is:
+[num_batches, num_gaussians, 2*num_dimensions]</p>
+<p>where,</p>
+<p>num_batches –&gt; number of batches
+num_gaussians –&gt; number of Gaussians in mixture of Gaussians
+num_dimensions –&gt; number of dimensions in each sample - 2 accounts for mean/variance for each dimension</p>
+<p>num_gaussians can be set to a number corresponding to how complex you wish your mixture of Gaussian distribution, e.g.
+num_gaussians = 2 vs num_gaussians = 10 (where 10 can model much more complex distribution whereas 2 will apply
+regularisation affect by trying to model a gt distribution with 2 Gaussians in mixture)</p>
+<p>One example is of inferring 3D head orientation from 2D images. The output is 3D (num_dimensions = 3) and if we use
+two Gaussians with a num_batch=2, then output will be of size</p>
+<p>[b, 2, 2 * num_dimensions]</p>
+<p>= [b, 2, 6]  - shape for output of the network</p>
+<p>For further usage examples, see optimisation tests inside tests/ folder within this project directory.</p>
+<dl class="py method">
+<dt id="propel_loss.propel.PROPEL.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">output</span></em>, <em class="sig-param"><span class="n">target</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/propel_loss/propel.html#PROPEL.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propel_loss.propel.PROPEL.forward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="propel_loss.propel.PROPEL.reduction">
+<code class="sig-name descname">reduction</code><em class="property">: str</em><a class="headerlink" href="#propel_loss.propel.PROPEL.reduction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="propel_loss.propel.g_function">
+<code class="sig-prename descclassname">propel_loss.propel.</code><code class="sig-name descname">g_function</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">muM1</span></em>, <em class="sig-param"><span class="n">sigmaM1</span></em>, <em class="sig-param"><span class="n">muM2</span></em>, <em class="sig-param"><span class="n">sigmaM2</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/propel_loss/propel.html#g_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propel_loss.propel.g_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>G Function implementation</p>
+<p>Implements the following equation:</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[G(P_i, P_j) = \frac{e^{\big[\frac{2\mu_{x_{1i}}\mu_{x_{1j}} - {\mu_{x_{1i}}}^2 - {\mu_{x_{1j}}}^2}{2(\sigma_{x_{1i}}+\sigma_{x_{1j}})} + \cdots + \frac{2\mu_{x_{ni}}\mu_{x_{nj}} - {\mu_{x_{ni}}}^2 - {\mu_{x_{nj}}}^2}{2(\sigma_{x_{ni}}+\sigma_{x_{nj}})}\big]}}{(\sqrt{2\pi})^n \sqrt{(\sigma_{x_{1i}} + \sigma_{x_{1j}}) \cdots (\sigma_{x_{ni}} + \sigma_{x_{nj}})}}\]</div>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>muM1</strong> (<em>torch.tensor</em>) – mean for first Gaussian distribution</p></li>
+<li><p><strong>sigmaM1</strong> (<em>torch.tensor</em>) – standard deviation for first Gaussian distribution</p></li>
+<li><p><strong>muM2</strong> (<em>torch.tensor</em>) – mean for second Gaussian distribution</p></li>
+<li><p><strong>sigmaM2</strong> (<em>torch.tensor</em>) – standard deviation for second Gaussian distribution</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>result of G(P_1, P_2)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="propel_loss.propel.getloss">
+<code class="sig-prename descclassname">propel_loss.propel.</code><code class="sig-name descname">getloss</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">muG</span></em>, <em class="sig-param"><span class="n">sigmaG</span></em>, <em class="sig-param"><span class="n">muM</span></em>, <em class="sig-param"><span class="n">sigmaM</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/propel_loss/propel.html#getloss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propel_loss.propel.getloss" title="Permalink to this definition">¶</a></dt>
+<dd><p>PROPEL Loss function
+Implements the following equations:</p>
+<dl>
+<dt>In forward pass:</dt><dd><div class="math notranslate nohighlight">
+\[L = -\log\underbrace{\left[ \frac{2}{I} \sum_{i=1}^{I} G(P_{gt}, P_{i}) \right]\rule[-12pt]{0pt}{5pt}}_{\mbox{$T1$}} + \log \underbrace{\left[H({P_{gt}}) + \frac{1}{I^2}\sum_{i=1}^{I} H({P_{i}})  + \frac{2}{I^2} \sum_{i &lt; j}^{I} G({P_{i},P_{j}}) \right]\rule[-12pt]{0pt}{5pt}}_{\mbox{$T2$}}\]</div>
+</dd>
+<dt>In backward pass:</dt><dd><div class="math notranslate nohighlight">
+\[\frac{\partial L}{\partial \mu_{x_{ni}}} = -\frac{1}{T1}\left[ \frac{\partial G(P_{gt}, P_{i})}{\partial \mu_{x_{ni}}} \right] + \frac{1}{T2} \left[ \frac{2}{I^2} \sum_{i &lt; j}^{I} \frac{\partial G({P_{i},P_{j}})}{\partial \mu_{x_{ni}}} \right]\]</div>
+<div class="math notranslate nohighlight">
+\[\frac{\partial L}{\partial \sigma_{x_{ni}}} = -\frac{1}{T1}\left[ \frac{\partial G(P_{gt}, P_{i})}{\partial \sigma_{x_{ni}}} \right] + \frac{1}{T2} \left[ \frac{1}{I^2} \frac{\partial H({P_{i}})}{\partial \sigma_{x_{ni}}} + \frac{2}{I^2} \sum_{i &lt; j}^{I} \frac{\partial G({P_{i},P_{j}})}{\partial \sigma_{x_{ni}}} \right]\]</div>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>muG</strong> (<em>torch.tensor</em>) – mean for groundtruth Gaussian distribution</p></li>
+<li><p><strong>sigmaG</strong> (<em>torch.tensor</em>) – standard deviation for groundtruth Gaussian distribution</p></li>
+<li><p><strong>muM</strong> (<em>torch.tensor</em>) – mean for model Mixture of Gaussian distribution (model output)</p></li>
+<li><p><strong>sigmaM</strong> (<em>torch.tensor</em>) – standard deviation for Mixture of Gaussian distribution (model output)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>computed loss in forward pass, gradients w.r.t muM/sigmaM in backward pass</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="propel_loss.propel.h_function">
+<code class="sig-prename descclassname">propel_loss.propel.</code><code class="sig-name descname">h_function</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sigmaM</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/propel_loss/propel.html#h_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propel_loss.propel.h_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>H function implementation</p>
+<p>Implements the following equation:</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[H(P_i) = \frac{1}{(2\sqrt{\pi})^n \sqrt{\sigma_{x_{1i}}\cdots\sigma_{x_{ni}}}}\]</div>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>sigmaM</strong> (<em>torch.tensor</em>) – standard deviation of our input Gaussian distribution</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>result of H(P_m)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>torch.tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="propel_loss.propel.unpack_prediction">
+<code class="sig-prename descclassname">propel_loss.propel.</code><code class="sig-name descname">unpack_prediction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pred</span></em>, <em class="sig-param"><span class="n">num_dims</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/propel_loss/propel.html#unpack_prediction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#propel_loss.propel.unpack_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function to unpack tensor coming from output of neural network</p>
+<p>It expects the pred tensor to have the following shape:
+[num_batch, num_gaussians, num_dimensions * 2] where:</p>
+<p>First [num_batch, num_gaussians, ::num_dimensions] correspond to mean</p>
+<p>Second [num_batch, num_gaussians, num_dimensions::] correspond to standard deviation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pred</strong> (<em>torch.tensor</em>) – prediction output from a neural network with shape [num_batch, num_gaussians, num_dimensions]</p></li>
+<li><p><strong>num_dims</strong> (<em>int</em>) – number of dimensions to unpack data for, e.g. 3 for 3D problems</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>unpacked mean (g_mu) and standard deviation (g_sigma)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple of torch.tensors</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Muhammad Asad.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

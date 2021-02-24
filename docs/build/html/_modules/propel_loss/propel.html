@@ -1,0 +1,418 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propel_loss.propel &mdash; PROPEL Loss 0.0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> PROPEL Loss
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PROPEL Loss</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>propel_loss.propel</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for propel_loss.propel</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<span class="c1"># Define EPS for numerical stability</span>
+<span class="n">eps</span> <span class="o">=</span> <span class="mf">7.0</span><span class="o">/</span><span class="mi">3</span> <span class="o">-</span> <span class="mf">4.0</span><span class="o">/</span><span class="mi">3</span> <span class="o">-</span> <span class="mi">1</span>
+
+
+<div class="viewcode-block" id="getloss"><a class="viewcode-back" href="../../index.html#propel_loss.propel.getloss">[docs]</a><span class="k">def</span> <span class="nf">getloss</span><span class="p">(</span><span class="n">muG</span><span class="p">,</span> <span class="n">sigmaG</span><span class="p">,</span> <span class="n">muM</span><span class="p">,</span> <span class="n">sigmaM</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;PROPEL Loss function</span>
+<span class="sd">    Implements the following equations:</span>
+
+<span class="sd">    In forward pass:</span>
+<span class="sd">     .. math::</span>
+<span class="sd">      L = -\log\underbrace{\left[ \frac{2}{I} \sum_{i=1}^{I} G(P_{gt}, P_{i}) \right]\rule[-12pt]{0pt}{5pt}}_{\mbox{$T1$}} + \log \underbrace{\left[H({P_{gt}}) + \frac{1}{I^2}\sum_{i=1}^{I} H({P_{i}})  + \frac{2}{I^2} \sum_{i &lt; j}^{I} G({P_{i},P_{j}}) \right]\rule[-12pt]{0pt}{5pt}}_{\mbox{$T2$}}</span>
+
+<span class="sd">    In backward pass:</span>
+<span class="sd">     .. math::</span>
+<span class="sd">      \frac{\partial L}{\partial \mu_{x_{ni}}} = -\frac{1}{T1}\left[ \frac{\partial G(P_{gt}, P_{i})}{\partial \mu_{x_{ni}}} \right] + \frac{1}{T2} \left[ \frac{2}{I^2} \sum_{i &lt; j}^{I} \frac{\partial G({P_{i},P_{j}})}{\partial \mu_{x_{ni}}} \right]</span>
+<span class="sd">     .. math:: </span>
+<span class="sd">      \frac{\partial L}{\partial \sigma_{x_{ni}}} = -\frac{1}{T1}\left[ \frac{\partial G(P_{gt}, P_{i})}{\partial \sigma_{x_{ni}}} \right] + \frac{1}{T2} \left[ \frac{1}{I^2} \frac{\partial H({P_{i}})}{\partial \sigma_{x_{ni}}} + \frac{2}{I^2} \sum_{i &lt; j}^{I} \frac{\partial G({P_{i},P_{j}})}{\partial \sigma_{x_{ni}}} \right]</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        muG (torch.tensor): mean for groundtruth Gaussian distribution</span>
+<span class="sd">        sigmaG (torch.tensor): standard deviation for groundtruth Gaussian distribution</span>
+<span class="sd">        muM (torch.tensor): mean for model Mixture of Gaussian distribution (model output)</span>
+<span class="sd">        sigmaM (torch.tensor): standard deviation for Mixture of Gaussian distribution (model output)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torch.tensor: computed loss in forward pass, gradients w.r.t muM/sigmaM in backward pass</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># get the number of gaussians in the mixture model</span>
+    <span class="n">num_gaussians</span> <span class="o">=</span> <span class="n">muM</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># \frac{2}{I} \sum_{i=1}^{I} G(P_{gt}, P_{i})</span>
+    <span class="n">T1</span> <span class="o">=</span> <span class="p">((</span><span class="mi">2</span> <span class="o">/</span> <span class="n">num_gaussians</span><span class="p">)</span> <span class="o">*</span> <span class="n">g_function</span><span class="p">(</span><span class="n">muG</span><span class="p">,</span> <span class="n">sigmaG</span><span class="p">,</span> <span class="n">muM</span><span class="p">,</span> <span class="n">sigmaM</span><span class="p">)</span>
+          <span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># around num_gaussians</span>
+
+    <span class="c1"># H({P_{gt}}) + \frac{1}{I^2}\sum_{i=1}^{I} H({P_{i}})</span>
+    <span class="n">T2</span> <span class="o">=</span> <span class="n">h_function</span><span class="p">(</span><span class="n">sigmaG</span><span class="p">)</span> <span class="o">+</span> <span class="p">((</span><span class="mi">1</span><span class="o">/</span><span class="n">num_gaussians</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                               <span class="o">*</span> <span class="n">h_function</span><span class="p">(</span><span class="n">sigmaM</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># computing the last term of a^2 + b^2 + &gt;&gt;&gt;2ab &lt;&lt;&lt;&lt;&lt;&lt;</span>
+    <span class="c1"># \frac{2}{I^2} \sum_{i &lt; j}^{I} G({P_{i},P_{j}}) </span>
+    <span class="n">i_index</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_gaussians</span><span class="p">),</span> <span class="mi">2</span><span class="p">)])</span>
+    <span class="n">j_index</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_gaussians</span><span class="p">),</span> <span class="mi">2</span><span class="p">)])</span>
+
+    <span class="n">i_index</span> <span class="o">=</span> <span class="n">i_index</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">muM</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">j_index</span> <span class="o">=</span> <span class="n">j_index</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">muM</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="n">T2_in</span> <span class="o">=</span> <span class="n">g_function</span><span class="p">(</span><span class="n">muM</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">i_index</span><span class="p">),</span> <span class="n">sigmaM</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span>
+        <span class="mi">1</span><span class="p">,</span> <span class="n">i_index</span><span class="p">),</span> <span class="n">muM</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">j_index</span><span class="p">),</span> <span class="n">sigmaM</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">j_index</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">T2</span> <span class="o">=</span> <span class="n">T2</span> <span class="o">+</span> <span class="p">(</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="n">num_gaussians</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span> <span class="o">*</span> <span class="n">T2_in</span>
+
+    <span class="n">L</span> <span class="o">=</span> <span class="o">-</span><span class="n">torch</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">T1</span><span class="p">)</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">T2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">L</span><span class="p">,</span> <span class="n">T1</span><span class="p">,</span> <span class="n">T2</span></div>
+
+
+<div class="viewcode-block" id="h_function"><a class="viewcode-back" href="../../index.html#propel_loss.propel.h_function">[docs]</a><span class="k">def</span> <span class="nf">h_function</span><span class="p">(</span><span class="n">sigmaM</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;H function implementation</span>
+
+<span class="sd">    Implements the following equation:</span>
+
+<span class="sd">     .. math::</span>
+<span class="sd">       H(P_i) = \frac{1}{(2\sqrt{\pi})^n \sqrt{\sigma_{x_{1i}}\cdots\sigma_{x_{ni}}}}</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        sigmaM (torch.tensor): standard deviation of our input Gaussian distribution</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torch.tensor: result of H(P_m)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num_dims</span> <span class="o">=</span> <span class="n">sigmaM</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">dTerm</span> <span class="o">=</span> <span class="n">sigmaM</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">dTerm_all</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span><span class="o">**</span><span class="p">(</span><span class="n">num_dims</span><span class="p">)</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dTerm</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="n">dTerm_all</span><span class="o">.</span><span class="n">clamp_min</span><span class="p">(</span><span class="n">eps</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="g_function"><a class="viewcode-back" href="../../index.html#propel_loss.propel.g_function">[docs]</a><span class="k">def</span> <span class="nf">g_function</span><span class="p">(</span><span class="n">muM1</span><span class="p">,</span> <span class="n">sigmaM1</span><span class="p">,</span> <span class="n">muM2</span><span class="p">,</span> <span class="n">sigmaM2</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;G Function implementation</span>
+
+<span class="sd">    Implements the following equation:</span>
+
+<span class="sd">     .. math::</span>
+<span class="sd">      G(P_i, P_j) = \frac{e^{\big[\frac{2\mu_{x_{1i}}\mu_{x_{1j}} - {\mu_{x_{1i}}}^2 - {\mu_{x_{1j}}}^2}{2(\sigma_{x_{1i}}+\sigma_{x_{1j}})} + \cdots + \frac{2\mu_{x_{ni}}\mu_{x_{nj}} - {\mu_{x_{ni}}}^2 - {\mu_{x_{nj}}}^2}{2(\sigma_{x_{ni}}+\sigma_{x_{nj}})}\big]}}{(\sqrt{2\pi})^n \sqrt{(\sigma_{x_{1i}} + \sigma_{x_{1j}}) \cdots (\sigma_{x_{ni}} + \sigma_{x_{nj}})}}</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        muM1 (torch.tensor): mean for first Gaussian distribution</span>
+<span class="sd">        sigmaM1 (torch.tensor): standard deviation for first Gaussian distribution</span>
+<span class="sd">        muM2 (torch.tensor): mean for second Gaussian distribution</span>
+<span class="sd">        sigmaM2 (torch.tensor): standard deviation for second Gaussian distribution</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        torch.tensor: result of G(P_1, P_2) </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num_dims</span> <span class="o">=</span> <span class="n">muM1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">num_gaussians</span> <span class="o">=</span> <span class="n">muM2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># expand mus and sigmas if not enough recieved</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">muM1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">muM2</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+        <span class="n">muM1</span> <span class="o">=</span> <span class="n">muM1</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># calculate the denominator term</span>
+    <span class="n">sumSigma</span> <span class="o">=</span> <span class="n">sigmaM1</span> <span class="o">+</span> <span class="n">sigmaM2</span>
+    <span class="n">mulSigma</span> <span class="o">=</span> <span class="n">sumSigma</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># mul dimensions</span>
+    <span class="n">aTerm</span> <span class="o">=</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">num_dims</span><span class="p">))</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">mulSigma</span><span class="p">)</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="n">aTerm</span><span class="o">.</span><span class="n">clamp_min</span><span class="p">(</span><span class="n">eps</span><span class="p">))</span>
+
+    <span class="n">bTerm</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">sigmaM1</span> <span class="o">+</span> <span class="n">sigmaM2</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="p">((</span><span class="mi">2</span><span class="o">*</span><span class="n">muM1</span><span class="o">*</span><span class="n">muM2</span> <span class="o">-</span> <span class="n">muM1</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">muM2</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="o">/</span>
+         <span class="p">(</span><span class="n">bTerm</span><span class="o">.</span><span class="n">clamp_min</span><span class="p">(</span><span class="n">eps</span><span class="p">)))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">out</span> <span class="o">=</span> <span class="n">A</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="unpack_prediction"><a class="viewcode-back" href="../../index.html#propel_loss.propel.unpack_prediction">[docs]</a><span class="k">def</span> <span class="nf">unpack_prediction</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">num_dims</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Helper function to unpack tensor coming from output of neural network</span>
+
+<span class="sd">    It expects the pred tensor to have the following shape:</span>
+<span class="sd">    [num_batch, num_gaussians, num_dimensions * 2] where:</span>
+
+<span class="sd">    First [num_batch, num_gaussians, ::num_dimensions] correspond to mean</span>
+
+<span class="sd">    Second [num_batch, num_gaussians, num_dimensions::] correspond to standard deviation</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pred (torch.tensor): prediction output from a neural network with shape [num_batch, num_gaussians, num_dimensions]</span>
+<span class="sd">        num_dims (int): number of dimensions to unpack data for, e.g. 3 for 3D problems</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple of torch.tensors: unpacked mean (g_mu) and standard deviation (g_sigma)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># index (num_dimensions) we are splitting is for the last dimension, i.e. 2</span>
+    <span class="n">g_mu</span><span class="p">,</span> <span class="n">g_sigma</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="p">[</span><span class="n">num_dims</span><span class="p">,</span> <span class="n">num_dims</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">g_mu</span><span class="p">,</span> <span class="n">g_sigma</span></div>
+
+
+<div class="viewcode-block" id="PROPEL"><a class="viewcode-back" href="../../index.html#propel_loss.propel.PROPEL">[docs]</a><span class="k">class</span> <span class="nc">PROPEL</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">loss</span><span class="o">.</span><span class="n">_Loss</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;PRObabilistic Parametric rEgression Loss (PROPEL) for enabling</span>
+<span class="sd">    neural networks to output parameters of a mixture of Gaussian distributions from [1].</span>
+
+<span class="sd">    [1] &quot;PROPEL: Probabilistic Parametric Regression Loss for Convolutional Neural Networks&quot;, </span>
+<span class="sd">    M. Asad et al. - 25th International Conference on Pattern Recognition (ICPR), 2020</span>
+
+<span class="sd">    Usage instructions:</span>
+<span class="sd">    In order to use the loss function, the expected output shape from neural network is:</span>
+<span class="sd">    [num_batches, num_gaussians, 2*num_dimensions] </span>
+
+<span class="sd">    where, </span>
+
+<span class="sd">    num_batches --&gt; number of batches</span>
+<span class="sd">    num_gaussians --&gt; number of Gaussians in mixture of Gaussians</span>
+<span class="sd">    num_dimensions --&gt; number of dimensions in each sample - 2 accounts for mean/variance for each dimension</span>
+
+<span class="sd">    num_gaussians can be set to a number corresponding to how complex you wish your mixture of Gaussian distribution, e.g. </span>
+<span class="sd">    num_gaussians = 2 vs num_gaussians = 10 (where 10 can model much more complex distribution whereas 2 will apply</span>
+<span class="sd">    regularisation affect by trying to model a gt distribution with 2 Gaussians in mixture)</span>
+
+<span class="sd">    One example is of inferring 3D head orientation from 2D images. The output is 3D (num_dimensions = 3) and if we use</span>
+<span class="sd">    two Gaussians with a num_batch=2, then output will be of size</span>
+
+<span class="sd">    [b, 2, 2 * num_dimensions]</span>
+
+<span class="sd">    = [b, 2, 6]  - shape for output of the network</span>
+
+<span class="sd">    For further usage examples, see optimisation tests inside tests/ folder within this project directory.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s1">&#39;mean&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PROPEL</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">reduction</span><span class="o">=</span><span class="n">reduction</span><span class="p">)</span>
+
+        <span class="c1"># defining sigma as parameter so *.to(device) function</span>
+        <span class="c1"># can be used to change device for it from loss object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">([[[</span><span class="n">sigma</span><span class="p">]]]),</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PROPEL.forward"><a class="viewcode-back" href="../../index.html#propel_loss.propel.PROPEL.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+
+        <span class="c1"># target shape:</span>
+        <span class="c1"># [batch, num_dims]</span>
+
+        <span class="c1"># output shape (network output):</span>
+        <span class="c1"># [batch, num_gaussians, 2 * num_dims]</span>
+        <span class="c1">#</span>
+        <span class="c1">#   2 is to account for mean and variance</span>
+        <span class="c1"># first     [batch, num_gaussians, num_dims] correspond to mean</span>
+        <span class="c1"># second    [batch, num_gaussians, num_dims] correspond to variance</span>
+
+        <span class="c1"># get size of everything</span>
+        <span class="n">num_batch</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">num_dims</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># check if target labels are in line with what we got</span>
+        <span class="k">assert</span> <span class="n">num_dims</span> <span class="o">==</span> <span class="n">target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;Num of dimensions dont match : output [</span><span class="si">%d</span><span class="s1">] != target [</span><span class="si">%d</span><span class="s1">]&#39;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="n">num_dims</span><span class="p">,</span> <span class="n">target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># split output prediction into relevant sections</span>
+        <span class="c1"># splits are of size num_dims (mean) and num_dims (variance)</span>
+        <span class="n">output_mu</span><span class="p">,</span> <span class="n">output_sigma</span> <span class="o">=</span> <span class="n">unpack_prediction</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">num_dims</span><span class="p">)</span>
+
+        <span class="c1"># apply differentiable loss - forward + backwards</span>
+        <span class="n">L</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">getloss</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span>
+            <span class="mi">2</span><span class="p">),</span> <span class="n">output_mu</span><span class="p">,</span> <span class="n">output_sigma</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+
+        <span class="c1"># apply selected reduction method</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reduction</span> <span class="o">==</span> <span class="s1">&#39;mean&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">L</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">reduction</span> <span class="o">==</span> <span class="s1">&#39;sum&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">L</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># none</span>
+            <span class="k">return</span> <span class="n">L</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Muhammad Asad.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -8,7 +8,7 @@ This repository provides official pytorch implementation of PROPEL.
 # Installation Instructions
 PROPEL can be installed using the following command 
 ```bash
-pip install git+https://github.com/masaddev/PROPEL.git
+pip install git+https://github.com/masadcv/PROPEL.git
 ```
 
 # Usage Example
@@ -42,7 +42,7 @@ L = propel_loss(feat, y)
 print(L)
 ```
 # Documentation
-Further details of each function implemented for PROPEL can be accessed at the documentation hosted at: [https://masaddev.github.io/PROPEL/index.html](https://masaddev.github.io/PROPEL/index.html). 
+Further details of each function implemented for PROPEL can be accessed at the documentation hosted at: [https://masadcv.github.io/PROPEL/index.html](https://masadcv.github.io/PROPEL/index.html). 
 
 # Citing PROPEL
 Pre-print of PROPEL can be found at: [PROPEL: Probabilistic Parametric Regression Loss for Convolutional Neural Networks](https://arxiv.org/pdf/1807.10937.pdf)

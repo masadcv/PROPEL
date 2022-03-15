@@ -5,7 +5,7 @@ def readme():
         return f.read()
 
 setuptools.setup(name='propel_loss',
-      version='0.1',
+      version='0.0.2',
       description='Probabilistic Parameteric Regression Loss (PROPEL)',
       long_description=readme(),
       classifiers=[
@@ -14,9 +14,9 @@ setuptools.setup(name='propel_loss',
         'Programming Language :: Python :: 3',
       ],
       keywords='regression probabilistic neural networks machine learning',
-      url='http://github.com/masaddev/PROPEL',
+      url='http://github.com/masadcv/PROPEL',
       author='Muhammad Asad',
-      author_email='masadcv@gmail.com',
+      author_email='muhammad.asad@kcl.ac.uk',
       license='BSD-3-Clause',
       packages=['propel_loss'],
       install_requires=[

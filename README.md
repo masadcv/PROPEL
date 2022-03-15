@@ -22,7 +22,7 @@ pip install git+https://github.com/masadcv/PROPEL.git
 import torch
 import numpy as np
 
-from propel_loss import PROPEL
+from torchpropel import PROPEL
 
 # Our example has a neural network with
 # output [num_batch, num_gaussians, num_dims]

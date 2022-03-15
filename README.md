@@ -7,6 +7,12 @@ This repository provides official pytorch implementation of PROPEL.
 
 # Installation Instructions
 PROPEL can be installed using the following command 
+
+```bash
+pip install torchpropel
+```
+
+
 ```bash
 pip install git+https://github.com/masadcv/PROPEL.git
 ```

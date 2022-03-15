@@ -6,7 +6,7 @@ from functools import wraps
 import numpy as np
 import torch
 
-from propel_loss import PROPEL, h_function, g_function
+from torchpropel import PROPEL, h_function, g_function
 
 # Define EPS for numerical stability
 eps = 7.0/3 - 4.0/3 - 1

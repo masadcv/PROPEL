@@ -4,7 +4,7 @@ def readme():
     with open('README.md') as f:
         return f.read()
 
-setuptools.setup(name='propel_loss',
+setuptools.setup(name='torchpropel',
       version='0.0.2',
       description='Probabilistic Parameteric Regression Loss (PROPEL)',
       long_description=readme(),
@@ -14,11 +14,11 @@ setuptools.setup(name='propel_loss',
         'Programming Language :: Python :: 3',
       ],
       keywords='regression probabilistic neural networks machine learning',
-      url='http://github.com/masadcv/PROPEL',
+      url='http://github.com/masadcv/torchpropel',
       author='Muhammad Asad',
       author_email='muhammad.asad@kcl.ac.uk',
       license='BSD-3-Clause',
-      packages=['propel_loss'],
+      packages=['torchpropel'],
       install_requires=[
           'torch',
       ],
